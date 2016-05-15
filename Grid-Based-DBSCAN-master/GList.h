@@ -1,0 +1,14 @@
+#ifndef __GLIST_H
+#define __GList_H
+#include "Def.h"
+
+GHdrNd GinitHdrNd();
+GLstNd GinitLstNd(GTreeNode tnInfo);
+void GinsertLstElem(GHdrNd HdrNdLst, GTreeNode tnInfo);
+void GinsertLstNd(GHdrNd HdrNdLst, GLstNd LstNdElem);
+Boolean GisLstEmpty(GHdrNd HdrNdLst);
+GLstNd GdeleteLstElem(GHdrNd HdrNdLst, GTreeNode tnInfo);
+GLstNd GdeleteLstFirst(GHdrNd HdrNdLst);
+GLstNd GdeleteNextNd(GHdrNd HdrNdLst, GLstNd LstNdElem);
+
+#endif

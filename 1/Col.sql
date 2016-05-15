@@ -1,0 +1,93 @@
+--USE [stock]
+--GO
+
+--IF OBJECT_ID('tempdb..##template_1minute', 'U') IS NULL
+--BEGIN
+--CREATE TABLE ##template_1minute(
+--	[date] DATE,
+--	[time] TIME(0),
+--	lowPrice SMALLMONEY,
+--	highPrice SMALLMONEY,
+--	price SMALLMONEY,
+--	avgPrice SMALLMONEY,
+--	num INT
+--)
+--END
+--GO
+
+--IF OBJECT_ID('tempdb..##template_15minute', 'U') IS NULL
+--BEGIN
+--CREATE TABLE ##template_15minute(
+--	[date] DATE,
+--	[time] TIME(0),
+--	lowPrice SMALLMONEY,
+--	highPrice SMALLMONEY,
+--	price SMALLMONEY,
+--	avgPrice SMALLMONEY,
+--	num INT
+--)
+--END
+--GO
+
+--INSERT INTO ##template_1minute 
+--SELECT CONVERT(VARCHAR(20), DATEADD(MINUTE, theTime, '00:00:00'), 108) AS [time]
+--	, MIN(price) AS minPrice, MAX(price) AS maxPrice, MAX(lastPrice) AS [lastPrice], SUM(1.0*price*num)/SUM(num) AS [avgPrice], SUM(num) AS [sum]
+--	FROM (SELECT theTime=DATEDIFF(MINUTE, '00:00:00', tim)
+--		, lastPrice=LAST_VALUE(price) OVER (PARTITION BY DATEDIFF(MINUTE, '00:00:00', tim) ORDER BY (SELECT 0) ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)
+--		, * FROM tab_20151214SZ000001) AS t
+--	GROUP BY theTime ORDER BY theTime ASC
+-- [date], [time], lowPrice, highPrice, price, avgPrice, num, ema1, ema2, dif
+
+--SELECT *, LAST_VALUE(num) OVER (PARTITION BY buy ORDER BY (SELECT 0) ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) as last_num FROM tab_20151214SZ000001
+--GO
+
+--IF OBJECT_ID('to_temp_table_1minute', 'P') IS NOT NULL
+--	DROP PROC to_temp_table_1minute
+--GO
+--CREATE PROC to_temp_table_1minute(@table_name VARCHAR(30), @dateIn NVARCHAR(30))
+--AS
+--BEGIN
+--DECLARE @sql NVARCHAR(1024)
+--SET @sql = N'INSERT INTO ##template_1minute SELECT '''+@dateIn+''' AS [date], CONVERT(VARCHAR(20), DATEADD(MINUTE, theTime, ''00:00:00''), 108) AS [time]'
+--	+', MIN(price) AS lowPrice, MAX(price) AS highPrice, MAX(lastPrice) AS [price], SUM(1.0*price*num)/SUM(num) AS [avgPrice], SUM(num) AS [num] '
+--	+' FROM (SELECT theTime=DATEDIFF(MINUTE, ''00:00:00'', tim) '
+--	+'	, lastPrice=LAST_VALUE(price) OVER (PARTITION BY DATEDIFF(MINUTE, ''00:00:00'', tim) ORDER BY (SELECT 0) ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)'
+--	+'	, * FROM stock.dbo.'+@table_name+') AS t '
+--	+'GROUP BY theTime ORDER BY theTime ASC'
+--EXEC sp_executesql @sql
+--END
+--GO
+
+--IF OBJECT_ID('to_temp_table_15minute', 'P') IS NOT NULL
+--	DROP PROC to_temp_table_15minute
+--GO
+--CREATE PROC to_temp_table_15minute
+--AS
+--BEGIN
+--INSERT INTO ##template_15minute
+--SELECT MAX([date]) AS [date]
+--	, CONVERT(VARCHAR(20), DATEADD(MINUTE, 0, theTime*15), 108) AS [time]
+--	, MIN(lowPrice) AS lowPrice
+--	, MAX(highPrice) AS highPrice, MAX(price) AS price, SUM(1.0*avgPrice*num)/SUM(num) AS avgPrice, SUM(num) AS num
+--FROM(SELECT [date], theTime=DATEDIFF(MINUTE, '00:00:00', [time])/15, lowPrice, highPrice
+--	, LAST_VALUE(price) OVER (PARTITION BY DATEDIFF(MINUTE, '00:00:00', [time])/15 ORDER BY [time] ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS [price]
+--	, avgPrice, num
+--	FROM ##template_1minute) AS t 
+--	GROUP BY theTime
+--END
+--GO
+
+--IF OBJECT_ID('get_1day', 'P') IS NOT NULL
+--	DROP PROC get_1day
+--GO
+--CREATE PROC get_1day
+--AS
+--BEGIN
+--	SELECT MAX([date]) AS [date], '00:00:00' AS [time], MIN(lowPrice) AS lowPrice, MAX(highPrice) AS highPrice
+--		, MAX(price) AS price, SUM(1.0*avgPrice*num)/SUM(num) AS avgPrice, SUM(num) AS num FROM (
+--	SELECT [date], lowPrice, highPrice
+--		, LAST_VALUE(price) OVER (ORDER BY [time] ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS price
+--		, avgPrice, num FROM ##template_15minute) AS t
+--	RETURN;
+--END
+--GO

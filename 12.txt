@@ -1,0 +1,41 @@
+归结表改名，前缀不要，只要添加固定字符
+template --> temporary
+
+以下最后做
+		connBatch1.close();
+		connBatch2.close();
+		connBatch3.close();
+		connBatch7.close();
+		connBatch8.close();
+		connBatch9.close();
+合起来crashRecover
+String[] crashedData = getCrashedCode(conn);
+		if (crashedData != null) {
+			testAndDelete(conn, conn_A, crashedData[0], crashedData[1], null);
+		}
+
+如果一个字段大部分时间取固定值时，可以设置默认值。
+
+devia初始化为0
+
+所有信息放在c盘stock目录下
+
+edDate没有必要，tabmgrhistory不用日期
+
+static void updateLogTable(Connection conn, String code, boolean isFinish, String bgDate, String logName)
+static void updateLogTable(Connection conn, String code, String state, String bgDate, String logName)
+
+initBatch();移动出循环
+相关close最后做
+
+fullCode没用了
+
+createColTable(tableName1, tableName2, tableName3);
+改为
+createColTable(codeName) 
+
+openBatch(tableName1, tableName2, tableName3);
+改为
+openBatch(codeName)
+
+TypeConver.restrDouble(double);是否有必要

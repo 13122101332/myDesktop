@@ -1,0 +1,13 @@
+DECLARE the_cursor CURSOR LOCAL
+FOR SELECT name FROM SYSOBJECTS WHERE TYPE='u' AND name NOT LIKE 'tab%'
+OPEN the_cursor
+DECLARE @table VARCHAR(50)
+WHILE @@FETCH_STATUS=0
+BEGIN
+FETCH NEXT FROM the_cursor INTO @table
+print @table
+EXEC('DROP TABLE '+@table)
+END
+CLOSE the_cursor
+DEALLOCATE the_cursor
+GO
